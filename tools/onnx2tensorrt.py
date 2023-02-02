@@ -4,9 +4,11 @@ import subprocess
 from pathlib import Path
 from typing import Union
 
+envs = os.environ.get('PATH').split(':')
+
 
 def check_trtexec() -> Union[Path, None, type(os)]:
-    envs = os.environ.get('PATH', [])
+    global envs
     for env in envs:
         env = Path(env)
         if env.is_file():
@@ -14,8 +16,8 @@ def check_trtexec() -> Union[Path, None, type(os)]:
                 return env
         elif env.is_dir():
             for i in env.iterdir():
-                if i.stem == 'trtexec':
-                    return env
+                if i.name == 'trtexec':
+                    return i
     try:
         import tensorrt as trt
     except ImportError:
@@ -26,7 +28,7 @@ def check_trtexec() -> Union[Path, None, type(os)]:
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser()
     parser.add_argument('onnx', help='ONNX path')
-    parser.add_argument('engine', help='TENSORRT engine save path')
+    parser.add_argument('output', help='TENSORRT engine save path')
     parser.add_argument('--fp16', action='store_true', help='FP16 model export')
     args = parser.parse_args()
     return args
@@ -37,7 +39,7 @@ def main(args: argparse.Namespace):
     assert isinstance(trt, (Path, bool)), 'NOT FOUND TRTEXEC OR TENSORRT'
     assert os.path.exists(args.onnx), f'NOT FOUND {args.onnx}'
     if isinstance(trt, Path):
-        cmd = f'trtexec --onnx={args.onnx} --saveEngine={args.engine}'
+        cmd = f'trtexec --onnx={args.onnx} --saveEngine={args.output}'
         if args.fp16:
             cmd += ' --fp16'
         subprocess.run(cmd.split(), check=True, env=os.environ)
@@ -59,12 +61,12 @@ def main(args: argparse.Namespace):
         if builder.platform_has_fast_fp16 and args.fp16:
             config.set_flag(trt.BuilderFlag.FP16)
         with builder.build_engine(network, config) as engine, \
-                open(args.engine, 'wb') as t:
+                open(args.output, 'wb') as t:
             t.write(engine.serialize())
     else:
         print(f'TENSORRT export failed')
         exit()
-    print(f'TENSORRT export success, save into {args.engine}')
+    print(f'TENSORRT export success, save into {args.output}')
 
 
 if __name__ == '__main__':

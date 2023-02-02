@@ -4,11 +4,10 @@ import subprocess
 from pathlib import Path
 from typing import Optional
 
+envs = os.environ.get('PATH').split(':')
 
-def check_pnnx() -> Optional[Path]:
-    for k, v in os.environ.items():
-        print(v)
-    envs = os.environ.get('PATH', [])
+
+def check_pnnx(envs: str) -> Optional[Path]:
     for env in envs:
         env = Path(env)
         if env.is_file():
@@ -16,8 +15,8 @@ def check_pnnx() -> Optional[Path]:
                 return env
         elif env.is_dir():
             for i in env.iterdir():
-                if i.stem == 'pnnx':
-                    return env
+                if i.name == 'pnnx':
+                    return i
     return None
 
 
@@ -47,4 +46,5 @@ def main(args: argparse.Namespace):
 
 if __name__ == '__main__':
     args = parse_args()
+    args.envs = envs
     main(args)

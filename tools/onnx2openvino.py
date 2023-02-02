@@ -1,8 +1,6 @@
 import os
 import argparse
 import subprocess
-from pathlib import Path
-from typing import Optional
 
 
 def check_openvino():
